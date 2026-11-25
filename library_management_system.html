@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Athena - Modern Library Management System</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        /* Custom scrollbar for data tables */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- Top Navigation Bar -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-md shadow-indigo-100">
+                    <i data-lucide="book-marked" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight text-slate-900">Athena LMS</h1>
+                    <p class="text-xs text-slate-500 font-medium">Library Management System</p>
+                </div>
+            </div>
+
+            <!-- Quick Action Buttons -->
+            <div class="flex items-center space-x-2">
+                <button onclick="openIssueModal()" class="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 transition shadow-sm">
+                    <i data-lucide="arrow-up-right" class="w-4 h-4"></i>
+                    <span>Issue Book</span>
+                </button>
+                <button onclick="openAddBookModal()" class="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold rounded-lg text-slate-700 bg-slate-100 hover:bg-slate-200 transition">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    <span class="hidden sm:inline">Add Book</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-slate-100">
+            <nav class="flex space-x-6 overflow-x-auto text-sm font-medium">
+                <button onclick="switchTab('dashboard')" id="tab-dashboard" class="py-3 px-1 border-b-2 font-semibold text-indigo-600 border-indigo-600 flex items-center gap-2 whitespace-nowrap">
+                    <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                    Dashboard
+                </button>
+                <button onclick="switchTab('inventory')" id="tab-inventory" class="py-3 px-1 border-b-2 font-medium text-slate-500 border-transparent hover:text-slate-700 hover:border-slate-300 flex items-center gap-2 whitespace-nowrap">
+                    <i data-lucide="books" class="w-4 h-4"></i>
+                    Catalog & Inventory
+                </button>
+                <button onclick="switchTab('members')" id="tab-members" class="py-3 px-1 border-b-2 font-medium text-slate-500 border-transparent hover:text-slate-700 hover:border-slate-300 flex items-center gap-2 whitespace-nowrap">
+                    <i data-lucide="users" class="w-4 h-4"></i>
+                    Members Directory
+                </button>
+                <button onclick="switchTab('transactions')" id="tab-transactions" class="py-3 px-1 border-b-2 font-medium text-slate-500 border-transparent hover:text-slate-700 hover:border-slate-300 flex items-center gap-2 whitespace-nowrap">
+                    <i data-lucide="history" class="w-4 h-4"></i>
+                    Borrowing Records
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+
+        <!-- Notification Toast -->
+        <div id="toast" class="hidden fixed bottom-6 right-6 max-w-sm bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl flex items-center space-x-3 z-50 transition transform">
+            <i id="toast-icon" data-lucide="check-circle" class="w-5 h-5 text-emerald-400"></i>
+            <span id="toast-msg" class="text-sm font-medium">Operation completed successfully.</span>
+        </div>
+
+        <!-- TAB 1: DASHBOARD -->
+        <section id="view-dashboard" class="space-y-6">
+            <!-- Metrics Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Books</p>
+                        <h3 id="stat-total-books" class="text-2xl font-bold text-slate-900 mt-1">0</h3>
+                        <p id="stat-copies-subtitle" class="text-xs text-slate-500 mt-0.5">0 total physical copies</p>
+                    </div>
+                    <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center">
+                        <i data-lucide="library" class="w-6 h-6"></i>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Issued Out</p>
+                        <h3 id="stat-borrowed-books" class="text-2xl font-bold text-amber-600 mt-1">0</h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Active loans</p>
+                    </div>
+                    <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center">
+                        <i data-lucide="book-up-2" class="w-6 h-6"></i>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Active Members</p>
+                        <h3 id="stat-total-members" class="text-2xl font-bold text-slate-900 mt-1">0</h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Registered library patrons</p>
+                    </div>
+                    <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center">
+                        <i data-lucide="user-check" class="w-6 h-6"></i>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Overdue Items</p>
+                        <h3 id="stat-overdue-count" class="text-2xl font-bold text-rose-600 mt-1">0</h3>
+                        <p id="stat-fine-total" class="text-xs text-rose-500 font-medium mt-0.5">$0.00 accumulated fines</p>
+                    </div>
+                    <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center">
+                        <i data-lucide="alert-circle" class="w-6 h-6"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard Split View -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Recent Transactions -->
+                <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+                    <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                        <h3 class="font-bold text-slate-900 flex items-center gap-2">
+                            <i data-lucide="clock" class="w-4 h-4 text-indigo-600"></i>
+                            Recent Checkouts & Activity
+                        </h3>
+                        <button onclick="switchTab('transactions')" class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold">View all</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-slate-50 text-xs text-slate-500 font-semibold uppercase">
+                                <tr>
+                                    <th class="px-5 py-3">Book Title</th>
+                                    <th class="px-5 py-3">Member</th>
+                                    <th class="px-5 py-3">Due Date</th>
+                                    <th class="px-5 py-3">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dash-recent-table" class="divide-y divide-slate-100 font-normal">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Quick Return & Due Alert Box -->
+                <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-5 flex flex-col justify-between">
+                    <div>
+                        <h3 class="font-bold text-slate-900 flex items-center gap-2 mb-3">
+                            <i data-lucide="bell" class="w-4 h-4 text-amber-500"></i>
+                            Quick Return by ID
+                        </h3>
+                        <p class="text-xs text-slate-500 mb-4">Enter checkout transaction ID or scan barcode to quickly return a book and settle dues.</p>
+                        <form onsubmit="handleQuickReturn(event)" class="space-y-3">
+                            <div>
+                                <label class="text-xs font-semibold text-slate-600">Transaction ID</label>
+                                <input id="quick-return-id" type="text" placeholder="e.g. TX-1001" required
+                                    class="w-full mt-1 text-sm rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                            </div>
+                            <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold py-2 px-4 rounded-lg transition flex items-center justify-center gap-2">
+                                <i data-lucide="check" class="w-4 h-4"></i>
+                                Process Return
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="mt-6 pt-4 border-t border-slate-100 text-xs text-slate-400">
+                        <p class="flex items-center gap-1.5"><i data-lucide="info" class="w-3.5 h-3.5"></i> Standard overdue fine rate: <strong>$1.00 / day</strong></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: INVENTORY -->
+        <section id="view-inventory" class="hidden space-y-4">
+            <!-- Search & Filter Controls -->
+            <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row gap-3 items-center justify-between">
+                <div class="relative w-full md:w-80">
+                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
+                    <input id="book-search" oninput="renderBooks()" type="text" placeholder="Search by title, author, or ISBN..."
+                        class="w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div class="flex items-center gap-3 w-full md:w-auto">
+                    <select id="book-genre-filter" onchange="renderBooks()" class="text-sm rounded-xl border border-slate-200 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-700">
+                        <option value="">All Genres</option>
+                        <option value="Fiction">Fiction</option>
+                        <option value="Science">Science</option>
+                        <option value="Technology">Technology</option>
+                        <option value="Philosophy">Philosophy</option>
+                        <option value="History">History</option>
+                    </select>
+
+                    <select id="book-status-filter" onchange="renderBooks()" class="text-sm rounded-xl border border-slate-200 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-700">
+                        <option value="">All Availability</option>
+                        <option value="available">In Stock</option>
+                        <option value="out">Checked Out</option>
+                    </select>
+
+                    <button onclick="openAddBookModal()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl flex items-center gap-1.5 whitespace-nowrap shadow-xs">
+                        <i data-lucide="plus" class="w-4 h-4"></i> New Book
+                    </button>
+                </div>
+            </div>
+
+            <!-- Books Table -->
+            <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-slate-50 text-xs text-slate-500 font-semibold uppercase tracking-wider">
+                            <tr>
+                                <th class="px-5 py-3.5">Book Details</th>
+                                <th class="px-5 py-3.5">ISBN</th>
+                                <th class="px-5 py-3.5">Genre</th>
+                                <th class="px-5 py-3.5">Copies (Avail / Total)</th>
+                                <th class="px-5 py-3.5">Status</th>
+                                <th class="px-5 py-3.5 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="books-table-body" class="divide-y divide-slate-100">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: MEMBERS DIRECTORY -->
+        <section id="view-members" class="hidden space-y-4">
+            <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row gap-3 items-center justify-between">
+                <div class="relative w-full md:w-80">
+                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
+                    <input id="member-search" oninput="renderMembers()" type="text" placeholder="Search members by name or ID..."
+                        class="w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <button onclick="openAddMemberModal()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl flex items-center gap-1.5 whitespace-nowrap shadow-xs">
+                    <i data-lucide="user-plus" class="w-4 h-4"></i> Add Member
+                </button>
+            </div>
+
+            <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-slate-50 text-xs text-slate-500 font-semibold uppercase tracking-wider">
+                            <tr>
+                                <th class="px-5 py-3.5">Member ID</th>
+                                <th class="px-5 py-3.5">Full Name</th>
+                                <th class="px-5 py-3.5">Email Address</th>
+                                <th class="px-5 py-3.5">Phone</th>
+                                <th class="px-5 py-3.5">Books Borrowed</th>
+                                <th class="px-5 py-3.5 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="members-table-body" class="divide-y divide-slate-100">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: BORROWING RECORDS -->
+        <section id="view-transactions" class="hidden space-y-4">
+            <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row gap-3 items-center justify-between">
+                <div class="relative w-full md:w-80">
+                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
+                    <input id="tx-search" oninput="renderTransactions()" type="text" placeholder="Filter by transaction, book, or member..."
+                        class="w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div class="flex gap-2">
+                    <select id="tx-status-filter" onchange="renderTransactions()" class="text-sm rounded-xl border border-slate-200 px-3 py-2 bg-white focus:ring-2 focus:ring-indigo-500 text-slate-700">
+                        <option value="">All Transactions</option>
+                        <option value="active">Active Borrowed</option>
+                        <option value="overdue">Overdue Items</option>
+                        <option value="returned">Returned</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-slate-50 text-xs text-slate-500 font-semibold uppercase tracking-wider">
+                            <tr>
+                                <th class="px-5 py-3.5">TX ID</th>
+                                <th class="px-5 py-3.5">Book Title</th>
+                                <th class="px-5 py-3.5">Member</th>
+                                <th class="px-5 py-3.5">Issue Date</th>
+                                <th class="px-5 py-3.5">Due Date</th>
+                                <th class="px-5 py-3.5">Status / Fine</th>
+                                <th class="px-5 py-3.5 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tx-table-body" class="divide-y divide-slate-100">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODAL: ADD BOOK -->
+    <div id="modal-book" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl relative">
+            <h3 class="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                <i data-lucide="book" class="w-5 h-5 text-indigo-600"></i>
+                Add Book to Catalog
+            </h3>
+            <form onsubmit="handleSaveBook(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Book Title *</label>
+                    <input id="input-book-title" type="text" required placeholder="e.g. Clean Code"
+                        class="w-full text-sm rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Author *</label>
+                        <input id="input-book-author" type="text" required placeholder="Robert C. Martin"
+                            class="w-full text-sm rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">ISBN *</label>
+                        <input id="input-book-isbn" type="text" required placeholder="978-0132350884"
+                            class="w-full text-sm rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Genre</label>
+                        <select id="input-book-genre" class="w-full text-sm rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white">
+                            <option value="Technology">Technology</option>
+                            <option value="Science">Science</option>
+                            <option value="Fiction">Fiction</option>
+                            <option value="Philosophy">Philosophy</option>
+                            <option value="History">History</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Total Copies *</label>
+                        <input id="input-book-copies" type="number" min="1" max="100" value="3" required
+                            class="w-full text-sm rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-2 pt-4 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('modal-book')" class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg font-medium">Cancel</button>
+                    <button type="submit" class="px-5 py-2 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold shadow-xs">Save Book</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD MEMBER -->
+    <div id="modal-member" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+            <h3 class="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                <i data-lucide="user-plus" class="w-5 h-5 text-indigo-600"></i>
+                Register New Member
+            </h3>
+            <form onsubmit="handleSaveMember(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Full Name *</label>
+                    <input id="input-member-name" type="text" required placeholder="Alice Johnson"
+                        class="w-full text-sm rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Email Address *</label>
+                    <input id="input-member-email" type="email" required placeholder="alice@example.com"
+                        class="w-full text-sm rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Phone Number</label>
+                    <input id="input-member-phone" type="tel" placeholder="+1 (555) 234-5678"
+                        class="w-full text-sm rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                </div>
+                <div class="flex justify-end space-x-2 pt-4 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('modal-member')" class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg font-medium">Cancel</button>
+                    <button type="submit" class="px-5 py-2 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold shadow-xs">Register</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: ISSUE BOOK -->
+    <div id="modal-issue" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl relative">
+            <h3 class="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                <i data-lucide="book-up-2" class="w-5 h-5 text-indigo-600"></i>
+                Issue Book to Member
+            </h3>
+            <form onsubmit="handleIssueBook(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Select Book *</label>
+                    <select id="issue-book-select" required class="w-full text-sm rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white">
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Select Patron/Member *</label>
+                    <select id="issue-member-select" required class="w-full text-sm rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white">
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Loan Period (Days)</label>
+                    <input id="issue-days" type="number" min="1" max="60" value="14" required
+                        class="w-full text-sm rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                </div>
+                <div class="flex justify-end space-x-2 pt-4 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('modal-issue')" class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg font-medium">Cancel</button>
+                    <button type="submit" class="px-5 py-2 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold shadow-xs">Complete Checkout</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // CORE APPLICATION STATE WITH DEFAULT SEED DATA
+        const STORAGE_KEY_BOOKS = 'athena_books_data';
+        const STORAGE_KEY_MEMBERS = 'athena_members_data';
+        const STORAGE_KEY_TX = 'athena_tx_data';
+
+        const initialBooks = [
+            { id: "B1", title: "Clean Code: A Handbook of Agile Software Craftsmanship", author: "Robert C. Martin", isbn: "978-0132350884", genre: "Technology", total: 4, available: 3 },
+            { id: "B2", title: "Design Patterns: Elements of Reusable Object-Oriented Software", author: "Erich Gamma et al.", isbn: "978-0201633610", genre: "Technology", total: 3, available: 1 },
+            { id: "B3", title: "Sapiens: A Brief History of Humankind", author: "Yuval Noah Harari", isbn: "978-0062316097", genre: "History", total: 5, available: 4 },
+            { id: "B4", title: "Meditations", author: "Marcus Aurelius", isbn: "978-0140449334", genre: "Philosophy", total: 3, available: 3 },
+            { id: "B5", title: "Astrophysics for People in a Hurry", author: "Neil deGrasse Tyson", isbn: "978-0393609394", genre: "Science", total: 2, available: 0 }
+        ];
+
+        const initialMembers = [
+            { id: "MEM-101", name: "Sarah Connor", email: "sarah.connor@sky.net", phone: "(555) 019-2834" },
+            { id: "MEM-102", name: "David Miller", email: "david.m@example.com", phone: "(555) 238-9901" },
+            { id: "MEM-103", name: "Elena Rostova", email: "elena.r@universe.org", phone: "(555) 432-8765" }
+        ];
+
+        // Seed transactions with one active and one overdue checkout for demo
+        const today = new Date();
+        const tenDaysAgo = new Date(today.getTime() - (10 * 86400000)).toISOString().split('T')[0];
+        const threeDaysAgo = new Date(today.getTime() - (3 * 86400000)).toISOString().split('T')[0];
+        const fourDaysLater = new Date(today.getTime() + (4 * 86400000)).toISOString().split('T')[0];
+
+        const initialTransactions = [
+            {
+                id: "TX-1001",
+                bookId: "B2",
+                bookTitle: "Design Patterns: Elements of Reusable Object-Oriented Software",
+                memberId: "MEM-101",
+                memberName: "Sarah Connor",
+                issueDate: tenDaysAgo,
+                dueDate: threeDaysAgo, // Overdue by 3 days
+                returnedDate: null,
+                status: "active"
+            },
+            {
+                id: "TX-1002",
+                bookId: "B5",
+                bookTitle: "Astrophysics for People in a Hurry",
+                memberId: "MEM-102",
+                memberName: "David Miller",
+                issueDate: today.toISOString().split('T')[0],
+                dueDate: fourDaysLater,
+                returnedDate: null,
+                status: "active"
+            }
+        ];
+
+        let books = JSON.parse(localStorage.getItem(STORAGE_KEY_BOOKS)) || initialBooks;
+        let members = JSON.parse(localStorage.getItem(STORAGE_KEY_MEMBERS)) || initialMembers;
+        let transactions = JSON.parse(localStorage.getItem(STORAGE_KEY_TX)) || initialTransactions;
+
+        function saveState() {
+            localStorage.setItem(STORAGE_KEY_BOOKS, JSON.stringify(books));
+            localStorage.setItem(STORAGE_KEY_MEMBERS, JSON.stringify(members));
+            localStorage.setItem(STORAGE_KEY_TX, JSON.stringify(transactions));
+            renderDashboard();
+        }
+
+        // TABS NAVIGATION
+        function switchTab(tabId) {
+            const tabs = ['dashboard', 'inventory', 'members', 'transactions'];
+            tabs.forEach(t => {
+                const navBtn = document.getElementById(`tab-${t}`);
+                const view = document.getElementById(`view-${t}`);
+                if (t === tabId) {
+                    navBtn.className = "py-3 px-1 border-b-2 font-semibold text-indigo-600 border-indigo-600 flex items-center gap-2 whitespace-nowrap";
+                    view.classList.remove('hidden');
+                } else {
+                    navBtn.className = "py-3 px-1 border-b-2 font-medium text-slate-500 border-transparent hover:text-slate-700 hover:border-slate-300 flex items-center gap-2 whitespace-nowrap";
+                    view.classList.add('hidden');
+                }
+            });
+            if(tabId === 'inventory') renderBooks();
+            if(tabId === 'members') renderMembers();
+            if(tabId === 'transactions') renderTransactions();
+            lucide.createIcons();
+        }
+
+        // UTILITY: Calculate Overdue Days and Fines
+        function getFineDetails(dueDateStr, returnedDateStr = null) {
+            const due = new Date(dueDateStr);
+            due.setHours(0,0,0,0);
+            const refDate = returnedDateStr ? new Date(returnedDateStr) : new Date();
+            refDate.setHours(0,0,0,0);
+
+            const diffTime = refDate - due;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays > 0) {
+                return { overdueDays: diffDays, fine: diffDays * 1.00 }; // $1.00 per day
+            }
+            return { overdueDays: 0, fine: 0.00 };
+        }
+
+        // RENDER: DASHBOARD
+        function renderDashboard() {
+            const totalCopies = books.reduce((acc, b) => acc + Number(b.total), 0);
+            const activeLoans = transactions.filter(t => !t.returnedDate);
+            
+            let overdueCount = 0;
+            let totalFines = 0;
+
+            activeLoans.forEach(tx => {
+                const { overdueDays, fine } = getFineDetails(tx.dueDate);
+                if (overdueDays > 0) {
+                    overdueCount++;
+                    totalFines += fine;
+                }
+            });
+
+            document.getElementById('stat-total-books').innerText = books.length;
+            document.getElementById('stat-copies-subtitle').innerText = `${totalCopies} total copies`;
+            document.getElementById('stat-borrowed-books').innerText = activeLoans.length;
+            document.getElementById('stat-total-members').innerText = members.length;
+            document.getElementById('stat-overdue-count').innerText = overdueCount;
+            document.getElementById('stat-fine-total').innerText = `$${totalFines.toFixed(2)} accumulated fines`;
+
+            // Recent Table
+            const recent = [...transactions].reverse().slice(0, 5);
+            const tbody = document.getElementById('dash-recent-table');
+            tbody.innerHTML = recent.map(tx => {
+                const isOverdue = !tx.returnedDate && new Date(tx.dueDate) < new Date();
+                let statusBadge = '';
+                if(tx.returnedDate) {
+                    statusBadge = '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">Returned</span>';
+                } else if(isOverdue) {
+                    statusBadge = '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800">Overdue</span>';
+                } else {
+                    statusBadge = '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">Active</span>';
+                }
+
+                return `
+                    <tr class="hover:bg-slate-50">
+                        <td class="px-5 py-3 font-medium text-slate-900">${tx.bookTitle}</td>
+                        <td class="px-5 py-3 text-slate-600">${tx.memberName}</td>
+                        <td class="px-5 py-3 text-slate-600">${tx.dueDate}</td>
+                        <td class="px-5 py-3">${statusBadge}</td>
+                    </tr>
+                `;
+            }).join('') || '<tr><td colspan="4" class="px-5 py-4 text-center text-slate-400">No checkout transactions recorded.</td></tr>';
+
+            lucide.createIcons();
+        }
+
+        // RENDER: BOOKS CATALOG
+        function renderBooks() {
+            const search = document.getElementById('book-search').value.toLowerCase();
+            const genre = document.getElementById('book-genre-filter').value;
+            const status = document.getElementById('book-status-filter').value;
+
+            const tbody = document.getElementById('books-table-body');
+            const filtered = books.filter(b => {
+                const matchesSearch = b.title.toLowerCase().includes(search) || 
+                                      b.author.toLowerCase().includes(search) || 
+                                      b.isbn.toLowerCase().includes(search);
+                const matchesGenre = !genre || b.genre === genre;
+                const matchesStatus = !status || (status === 'available' ? b.available > 0 : b.available === 0);
+                return matchesSearch && matchesGenre && matchesStatus;
+            });
+
+            tbody.innerHTML = filtered.map(b => `
+                <tr class="hover:bg-slate-50 transition">
+                    <td class="px-5 py-3.5">
+                        <div class="font-semibold text-slate-900">${b.title}</div>
+                        <div class="text-xs text-slate-500 font-medium">by ${b.author}</div>
+                    </td>
+                    <td class="px-5 py-3.5 text-xs text-slate-500 font-mono">${b.isbn}</td>
+                    <td class="px-5 py-3.5">
+                        <span class="inline-flex px-2 py-0.5 rounded-md text-xs font-medium bg-slate-100 text-slate-700">${b.genre}</span>
+                    </td>
+                    <td class="px-5 py-3.5 font-medium text-slate-800">
+                        ${b.available} / ${b.total}
+                    </td>
+                    <td class="px-5 py-3.5">
+                        ${b.available > 0 
+                            ? '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">In Stock</span>'
+                            : '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">Out of Stock</span>'
+                        }
+                    </td>
+                    <td class="px-5 py-3.5 text-right space-x-1">
+                        <button onclick="deleteBook('${b.id}')" class="text-slate-400 hover:text-rose-600 p-1.5 transition rounded-lg hover:bg-slate-100" title="Delete Book">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('') || '<tr><td colspan="6" class="px-5 py-8 text-center text-slate-400">No books found matching criteria.</td></tr>';
+
+            lucide.createIcons();
+        }
+
+        // RENDER: MEMBERS DIRECTORY
+        function renderMembers() {
+            const search = document.getElementById('member-search').value.toLowerCase();
+            const tbody = document.getElementById('members-table-body');
+
+            const filtered = members.filter(m => 
+                m.name.toLowerCase().includes(search) || 
+                m.id.toLowerCase().includes(search) ||
+                m.email.toLowerCase().includes(search)
+            );
+
+            tbody.innerHTML = filtered.map(m => {
+                const activeLoansCount = transactions.filter(t => t.memberId === m.id && !t.returnedDate).length;
+                return `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="px-5 py-3.5 font-mono text-xs font-semibold text-slate-600">${m.id}</td>
+                        <td class="px-5 py-3.5 font-semibold text-slate-900">${m.name}</td>
+                        <td class="px-5 py-3.5 text-slate-600 text-sm">${m.email}</td>
+                        <td class="px-5 py-3.5 text-slate-600 text-sm">${m.phone || '—'}</td>
+                        <td class="px-5 py-3.5">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${activeLoansCount > 0 ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-600'}">
+                                ${activeLoansCount} book(s)
+                            </span>
+                        </td>
+                        <td class="px-5 py-3.5 text-right">
+                            <button onclick="deleteMember('${m.id}')" class="text-slate-400 hover:text-rose-600 p-1.5 transition rounded-lg hover:bg-slate-100" title="Delete Member">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('') || '<tr><td colspan="6" class="px-5 py-8 text-center text-slate-400">No members found.</td></tr>';
+
+            lucide.createIcons();
+        }
+
+        // RENDER: BORROW / RETURN LOG
+        function renderTransactions() {
+            const search = document.getElementById('tx-search').value.toLowerCase();
+            const filter = document.getElementById('tx-status-filter').value;
+            const tbody = document.getElementById('tx-table-body');
+
+            const filtered = transactions.filter(tx => {
+                const isOverdue = !tx.returnedDate && new Date(tx.dueDate) < new Date();
+                const matchesSearch = tx.id.toLowerCase().includes(search) || 
+                                      tx.bookTitle.toLowerCase().includes(search) || 
+                                      tx.memberName.toLowerCase().includes(search);
+                
+                let matchesStatus = true;
+                if (filter === 'active') matchesStatus = !tx.returnedDate;
+                if (filter === 'overdue') matchesStatus = isOverdue;
+                if (filter === 'returned') matchesStatus = !!tx.returnedDate;
+
+                return matchesSearch && matchesStatus;
+            });
+
+            tbody.innerHTML = filtered.map(tx => {
+                const fineInfo = getFineDetails(tx.dueDate, tx.returnedDate);
+                let badge = '';
+
+                if (tx.returnedDate) {
+                    badge = `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">Returned (${tx.returnedDate})</span>`;
+                } else if (fineInfo.overdueDays > 0) {
+                    badge = `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800">${fineInfo.overdueDays}d Late ($${fineInfo.fine.toFixed(2)})</span>`;
+                } else {
+                    badge = `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">Active</span>`;
+                }
+
+                return `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="px-5 py-3.5 font-mono text-xs font-bold text-slate-700">${tx.id}</td>
+                        <td class="px-5 py-3.5 font-semibold text-slate-900">${tx.bookTitle}</td>
+                        <td class="px-5 py-3.5 text-slate-700 font-medium">${tx.memberName}</td>
+                        <td class="px-5 py-3.5 text-xs text-slate-500">${tx.issueDate}</td>
+                        <td class="px-5 py-3.5 text-xs font-medium ${fineInfo.overdueDays > 0 && !tx.returnedDate ? 'text-rose-600 font-bold' : 'text-slate-600'}">${tx.dueDate}</td>
+                        <td class="px-5 py-3.5">${badge}</td>
+                        <td class="px-5 py-3.5 text-right">
+                            ${!tx.returnedDate ? `
+                                <button onclick="returnBook('${tx.id}')" class="px-2.5 py-1 text-xs font-semibold bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-lg transition">
+                                    Return
+                                </button>
+                            ` : '<span class="text-xs text-slate-400">Completed</span>'}
+                        </td>
+                    </tr>
+                `;
+            }).join('') || '<tr><td colspan="7" class="px-5 py-8 text-center text-slate-400">No records found.</td></tr>';
+
+            lucide.createIcons();
+        }
+
+        // HANDLERS: MODALS & FORMS
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+        function openAddBookModal() { openModal('modal-book'); }
+        function openAddMemberModal() { openModal('modal-member'); }
+
+        function openIssueModal() {
+            // Populate books dropdown
+            const bSelect = document.getElementById('issue-book-select');
+            const availableBooks = books.filter(b => b.available > 0);
+            bSelect.innerHTML = availableBooks.length 
+                ? availableBooks.map(b => `<option value="${b.id}">${b.title} (${b.available} copies available)</option>`).join('')
+                : '<option disabled selected>No books currently available in stock</option>';
+
+            // Populate members dropdown
+            const mSelect = document.getElementById('issue-member-select');
+            mSelect.innerHTML = members.length 
+                ? members.map(m => `<option value="${m.id}">${m.name} (${m.id})</option>`).join('')
+                : '<option disabled selected>No registered members found</option>';
+
+            openModal('modal-issue');
+        }
+
+        function handleSaveBook(e) {
+            e.preventDefault();
+            const title = document.getElementById('input-book-title').value.trim();
+            const author = document.getElementById('input-book-author').value.trim();
+            const isbn = document.getElementById('input-book-isbn').value.trim();
+            const genre = document.getElementById('input-book-genre').value;
+            const copies = parseInt(document.getElementById('input-book-copies').value, 10);
+
+            const newBook = {
+                id: "B" + (Date.now() % 10000),
+                title,
+                author,
+                isbn,
+                genre,
+                total: copies,
+                available: copies
+            };
+
+            books.push(newBook);
+            saveState();
+            closeModal('modal-book');
+            e.target.reset();
+            renderBooks();
+            showToast(`Added "${newBook.title}" successfully.`);
+        }
+
+        function handleSaveMember(e) {
+            e.preventDefault();
+            const name = document.getElementById('input-member-name').value.trim();
+            const email = document.getElementById('input-member-email').value.trim();
+            const phone = document.getElementById('input-member-phone').value.trim();
+
+            const newMember = {
+                id: "MEM-" + Math.floor(100 + Math.random() * 900),
+                name,
+                email,
+                phone
+            };
+
+            members.push(newMember);
+            saveState();
+            closeModal('modal-member');
+            e.target.reset();
+            renderMembers();
+            showToast(`Member ${newMember.name} registered.`);
+        }
+
+        function handleIssueBook(e) {
+            e.preventDefault();
+            const bookId = document.getElementById('issue-book-select').value;
+            const memberId = document.getElementById('issue-member-select').value;
+            const days = parseInt(document.getElementById('issue-days').value, 10);
+
+            if (!bookId || !memberId) {
+                showToast("Please ensure both a book and member are selected.", true);
+                return;
+            }
+
+            const book = books.find(b => b.id === bookId);
+            const member = members.find(m => m.id === memberId);
+
+            if (!book || book.available <= 0) {
+                showToast("Book copy is not available.", true);
+                return;
+            }
+
+            // Decrement copies
+            book.available -= 1;
+
+            const issueDate = new Date();
+            const dueDate = new Date();
+            dueDate.setDate(dueDate.getDate() + days);
+
+            const newTx = {
+                id: "TX-" + Math.floor(1000 + Math.random() * 9000),
+                bookId: book.id,
+                bookTitle: book.title,
+                memberId: member.id,
+                memberName: member.name,
+                issueDate: issueDate.toISOString().split('T')[0],
+                dueDate: dueDate.toISOString().split('T')[0],
+                returnedDate: null,
+                status: "active"
+            };
+
+            transactions.unshift(newTx);
+            saveState();
+            closeModal('modal-issue');
+            renderBooks();
+            renderTransactions();
+            showToast(`Book issued to ${member.name}. Due on ${newTx.dueDate}`);
+        }
+
+        function returnBook(txId) {
+            const tx = transactions.find(t => t.id === txId);
+            if (!tx || tx.returnedDate) return;
+
+            const returnDateStr = new Date().toISOString().split('T')[0];
+            tx.returnedDate = returnDateStr;
+            tx.status = 'returned';
+
+            // Increment back the book availability
+            const book = books.find(b => b.id === tx.bookId);
+            if (book) {
+                book.available = Math.min(book.total, book.available + 1);
+            }
+
+            const fineInfo = getFineDetails(tx.dueDate, returnDateStr);
+            saveState();
+            renderBooks();
+            renderTransactions();
+
+            if (fineInfo.fine > 0) {
+                showToast(`Book returned with $${fineInfo.fine.toFixed(2)} overdue fine.`);
+            } else {
+                showToast(`Book returned successfully on time!`);
+            }
+        }
+
+        function handleQuickReturn(e) {
+            e.preventDefault();
+            const txIdInput = document.getElementById('quick-return-id');
+            const txId = txIdInput.value.trim().toUpperCase();
+
+            const tx = transactions.find(t => t.id.toUpperCase() === txId);
+            if (!tx) {
+                showToast(`Transaction ID "${txId}" not found.`, true);
+                return;
+            }
+            if (tx.returnedDate) {
+                showToast(`Transaction ${txId} is already marked as returned.`, true);
+                return;
+            }
+
+            returnBook(tx.id);
+            txIdInput.value = '';
+        }
+
+        function deleteBook(bookId) {
+            // Check if active loans exist for this book
+            const hasLoans = transactions.some(t => t.bookId === bookId && !t.returnedDate);
+            if (hasLoans) {
+                showToast("Cannot delete a book with active checkouts.", true);
+                return;
+            }
+            books = books.filter(b => b.id !== bookId);
+            saveState();
+            renderBooks();
+            showToast("Book deleted from library catalog.");
+        }
+
+        function deleteMember(memberId) {
+            const hasLoans = transactions.some(t => t.memberId === memberId && !t.returnedDate);
+            if (hasLoans) {
+                showToast("Cannot delete member with unreturned books.", true);
+                return;
+            }
+            members = members.filter(m => m.id !== memberId);
+            saveState();
+            renderMembers();
+            showToast("Member record removed.");
+        }
+
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast');
+            const msgEl = document.getElementById('toast-msg');
+            const icon = document.getElementById('toast-icon');
+
+            msgEl.innerText = message;
+            if (isError) {
+                toast.classList.remove('bg-slate-900');
+                toast.classList.add('bg-rose-900');
+                icon.className = "w-5 h-5 text-rose-300";
+            } else {
+                toast.classList.remove('bg-rose-900');
+                toast.classList.add('bg-slate-900');
+                icon.className = "w-5 h-5 text-emerald-400";
+            }
+
+            toast.classList.remove('hidden');
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3500);
+        }
+
+        // Initialize application on load
+        window.onload = function () {
+            renderDashboard();
+            lucide.createIcons();
+        };
+    </script>
+</body>
+</html>
